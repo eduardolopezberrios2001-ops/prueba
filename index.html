@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Lista de Deseos♡</title>
+<style>
+:root{
+  --pink:#f5a9c8;--pink-dark:#d95f95;--pink-light:#fff0f6;
+  --lavender:#e9ddff;--cream:#fffaf7;--text:#593d50;--muted:#987b8e;
+  --green:#6eaa8b;--line:#f3d3e1;--shadow:0 12px 35px #c86b941a;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:"Trebuchet MS",Arial,sans-serif;color:var(--text);
+background:radial-gradient(ellipse at 10% 0%,#ffe0ec 0,transparent 35%),
+radial-gradient(ellipse at 100% 15%,#eee4ff 0,transparent 30%),var(--cream)}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+.hero{text-align:center;padding:42px 18px 28px;position:relative;overflow:hidden}
+.hero:before,.hero:after{content:"✦  ♡  ✧";position:absolute;color:#e7a2c0;font-size:22px;opacity:.7;top:35px}
+.hero:before{left:8%;transform:rotate(-15deg)}.hero:after{right:8%;transform:rotate(15deg)}
+.crown{font-size:30px;filter:drop-shadow(0 3px 3px #e9a8c5)}
+h1{font-family:Georgia,serif;font-weight:normal;font-size:clamp(2rem,5vw,3.3rem);margin:8px 0;color:#bf5d8b}
+.subtitle{margin:0;color:var(--muted);font-size:1rem}
+.wrap{width:min(1080px,calc(100% - 28px));margin:0 auto 48px}
+.panel{background:#ffffffd9;border:1px solid #f4d5e3;border-radius:24px;box-shadow:var(--shadow);padding:22px;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.stat{border:1px solid var(--line);background:#fff8fb;border-radius:18px;padding:14px;text-align:center}
+.stat strong{display:block;font-family:Georgia,serif;font-size:1.65rem;color:#c85e91}
+.stat span{font-size:.83rem;color:var(--muted)}
+.progress{height:10px;border-radius:99px;background:#f9e3ed;overflow:hidden;margin-top:12px}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#f3a7c7,#cba8f4);border-radius:99px;transition:width .25s}
+.section-title{font-family:Georgia,serif;font-size:1.35rem;margin:0 0 15px;color:#b95886}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field.full{grid-column:1/-1}
+label{font-size:.86rem;color:#8e657d}
+input,textarea,select{width:100%;border:1px solid #edc7d9;background:#fffafd;border-radius:13px;padding:11px 12px;color:var(--text);outline:none}
+input:focus,textarea:focus,select:focus{border-color:#d982ac;box-shadow:0 0 0 3px #f8dbe8}
+textarea{resize:vertical;min-height:76px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.btn{border:0;border-radius:999px;padding:11px 17px;font-weight:bold;transition:transform .15s,filter .15s}
+.btn:hover{transform:translateY(-1px);filter:brightness(.98)}
+.primary{background:linear-gradient(110deg,#ee9fc1,#d6b5f4);color:#fff}
+.soft{background:#fff0f6;color:#b95886;border:1px solid #f2cadd}
+.danger{background:#fff0ef;color:#b95c65;border:1px solid #f5d0d0}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.toolbar input{flex:1;min-width:170px}
+.toolbar select{width:auto;min-width:145px}
+.items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.item{position:relative;background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 5px 18px #c86b9410;display:flex;flex-direction:column;min-width:0}
+.item.bought{background:#fffafd;border-color:#d8eadf}
+.item-photo{height:175px;background:linear-gradient(135deg,#fff0f6,#f1e9ff);display:flex;align-items:center;justify-content:center;overflow:hidden;color:#d28eaf;font-size:2.4rem}
+.item-photo img{width:100%;height:100%;object-fit:cover}
+.item-content{padding:14px;display:flex;flex-direction:column;gap:9px;flex:1}
+.item-top{display:flex;align-items:flex-start;gap:8px}
+.item h3{font-family:Georgia,serif;font-size:1.15rem;font-weight:normal;margin:0;overflow-wrap:anywhere;flex:1}
+.category{font-size:.72rem;background:#f9e8f0;color:#b55f88;border-radius:99px;padding:5px 8px;white-space:nowrap}
+.description{font-size:.9rem;line-height:1.45;color:#80687a;white-space:pre-wrap;overflow-wrap:anywhere}
+.price{font-weight:bold;color:#b95886}
+.item a{color:#a14f83;overflow-wrap:anywhere;font-size:.87rem}
+.status{display:flex;align-items:center;gap:8px;font-size:.88rem;margin-top:auto;padding-top:5px}
+.status input{width:18px;height:18px;accent-color:#d76e9e;cursor:pointer}
+.bought .item h3{text-decoration:line-through;color:#9c8a96}
+.card-actions{display:flex;gap:7px;margin-top:5px}
+.card-actions button{flex:1;padding:8px 10px;font-size:.82rem}
+.empty{grid-column:1/-1;text-align:center;padding:42px 15px;color:var(--muted);border:1px dashed #e8bfd1;border-radius:20px;background:#fff9fc}
+.empty .big{font-size:2.4rem;margin-bottom:8px}
+footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#68475c;color:white;padding:11px 17px;border-radius:999px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+.toast.show{opacity:1}
+@media(max-width:800px){.items{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.panel{padding:16px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.items{grid-template-columns:1fr 1fr;gap:10px}.item-photo{height:130px}.item-content{padding:11px}.item h3{font-size:1rem}.category{display:none}.hero:before{left:3%}.hero:after{right:3%}}
+@media(max-width:380px){.items{grid-template-columns:1fr}.stats{gap:7px}.stat{padding:10px 5px}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="crown">♕</div>
+  <h1>Mi Lista de Deseos</h1>
+  <p class="subtitle">Pequeños caprichos, grandes sueños y cositas bonitas ♡</p>
+</header>
+<main class="wrap">
+  <section class="stats" aria-label="Resumen de compras">
+    <div class="stat"><strong id="total">0</strong><span>Mis cositas</span></div>
+    <div class="stat"><strong id="bought">0</strong><span>Ya compradas</span></div>
+    <div class="stat"><strong id="remaining">0</strong><span>Por conseguir</span></div>
+  </section>
+  <section class="panel">
+    <h2 class="section-title" id="formTitle">♡ Añadir una cosita</h2>
+    <form id="itemForm">
+      <input type="hidden" id="editId">
+      <div class="form-grid">
+        <div class="field"><label for="name">Nombre *</label><input id="name" required maxlength="100" placeholder="Ej. Labial rosita"></div>
+        <div class="field"><label for="category">Categoría</label>
+          <select id="category"><option>Maquillaje</option><option>Ropa y accesorios</option><option>Skincare</option><option>Tecnología</option><option>Decoración</option><option>Libros</option><option>Otro caprichito</option></select>
+        </div>
+        <div class="field"><label for="price">Precio (opcional)</label><input id="price" placeholder="Ej. 12.990" inputmode="decimal"></div>
+        <div class="field"><label for="link">Link de compra (opcional)</label><input id="link" type="url" placeholder="https://..."></div>
+        <div class="field full"><label for="photo">Foto (opcional)</label><input id="photo" type="file" accept="image/*"><small style="color:#a58a9a">La foto se guarda en este navegador. Imágenes grandes pueden ocupar bastante espacio.</small><label style="display:flex;align-items:center;gap:8px;flex-direction:row"><input id="removePhoto" type="checkbox" style="width:auto"> Quitar foto actual al guardar</label></div>
+        <div class="field full"><label for="description">Notas (opcional)</label><textarea id="description" maxlength="600" placeholder="Color, talla, tienda, por qué lo quiero..."></textarea></div>
+      </div>
+      <div class="actions"><button class="btn primary" type="submit" id="saveBtn">♡ Guardar cosita</button><button class="btn soft" type="button" id="cancelEdit" hidden>Cancelar edición</button></div>
+    </form>
+  </section>
+  <section class="panel">
+    <h2 class="section-title">✧ Mi wishlist ✧</h2>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Buscar una cosita...">
+      <select id="filter" aria-label="Filtrar por estado"><option value="all">Todas</option><option value="pending">Por comprar</option><option value="bought">Compradas</option></select>
+      <select id="sort" aria-label="Ordenar"><option value="new">Más recientes</option><option value="name">Nombre A–Z</option><option value="price">Precio: menor a mayor</option></select>
+    </div>
+    <div class="items" id="items"></div>
+  </section>
+  <section class="panel">
+    <h2 class="section-title">♡ Tu lista, a salvo</h2>
+    <p class="description">Tus datos se guardan en este navegador y en este dispositivo. Para tener una copia o pasar la lista a otro equipo, exporta un respaldo. Las fotos se incluyen en el archivo JSON.</p>
+    <div class="actions">
+      <button class="btn soft" id="exportBtn" type="button">♡ Exportar respaldo</button>
+      <label class="btn soft" for="importFile" style="cursor:pointer">Importar respaldo</label><input id="importFile" type="file" accept=".json,application/json" hidden>
+      <button class="btn danger" id="clearBtn" type="button">Borrar toda la lista</button>
+    </div>
+  </section>
+</main>
+<footer>Hecho con amor, brillo y un poquito de magia ♡</footer>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(() => {
+  const STORAGE_KEY = "mi-lista-princesa-v1";
+  let items = [];
+  let dbReady = false;
+  const $ = id => document.getElementById(id);
+  const form = $("itemForm");
+  const photoInput = $("photo");
+
+  function toast(message) {
+    const el = $("toast"); el.textContent = message; el.classList.add("show");
+    clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove("show"), 2400);
+  }
+  function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function safeUrl(value) {
+    if (!value) return "";
+    try { const u = new URL(value); return ["http:", "https:"].includes(u.protocol) ? u.href : ""; }
+    catch { return ""; }
+  }
+  function money(value) {
+    if (!value) return "";
+    return value.trim().startsWith("$") ? value.trim() : "$" + value.trim();
+  }
+  function escapeText(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  }
+  function persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+    catch { toast("No se pudo guardar. Prueba con una foto más pequeña."); }
+  }
+  function readStore() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      items = Array.isArray(data) ? data.filter(x => x && x.id && x.name).map(x => ({
+        id:String(x.id), name:String(x.name), category:String(x.category || "Otro caprichito"),
+        price:String(x.price || ""), link:safeUrl(x.link || ""), description:String(x.description || ""),
+        photo:typeof x.photo === "string" && x.photo.startsWith("data:image/") ? x.photo : "",
+        bought:!!x.bought, created:Number(x.created || Date.now())
+      })) : [];
+    } catch { items = []; }
+    dbReady = true; render();
+  }
+  function render() {
+    const boughtCount = items.filter(x => x.bought).length;
+    $("total").textContent = items.length;
+    $("bought").textContent = boughtCount;
+    $("remaining").textContent = items.length - boughtCount;
+    const pct = items.length ? Math.round(boughtCount / items.length * 100) : 0;
+    let filtered = [...items];
+    const q = $("search").value.trim().toLowerCase(), filter = $("filter").value, sort = $("sort").value;
+    if (q) filtered = filtered.filter(x => [x.name,x.category,x.description,x.price].join(" ").toLowerCase().includes(q));
+    if (filter === "pending") filtered = filtered.filter(x => !x.bought);
+    if (filter === "bought") filtered = filtered.filter(x => x.bought);
+    if (sort === "name") filtered.sort((a,b) => a.name.localeCompare(b.name,"es"));
+    else if (sort === "price") filtered.sort((a,b) => (parseFloat(a.price.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity) - (parseFloat(b.price.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity));
+    else filtered.sort((a,b) => b.created-a.created);
+    const container = $("items");
+    if (!filtered.length) {
+      container.innerHTML = `<div class="empty"><div class="big">♡</div><strong>${items.length ? "No encuentro cositas con ese filtro" : "Tu wishlist está esperando magia"}</strong><p>${items.length ? "Prueba con otra búsqueda o filtro." : "Añade tu primer caprichito en el formulario de arriba."}</p></div>`;
+      return;
+    }
+    container.innerHTML = filtered.map(item => {
+      const url = safeUrl(item.link);
+      const photo = item.photo ? `<img src="${item.photo}" alt="Foto de ${escapeText(item.name)}">` : "♡";
+      return `<article class="item ${item.bought ? "bought" : ""}">
+        <div class="item-photo">${photo}</div>
+        <div class="item-content">
+          <div class="item-top"><h3>${escapeText(item.name)}</h3><span class="category">${escapeText(item.category)}</span></div>
+          ${item.price ? `<div class="price">${escapeText(money(item.price))}</div>` : ""}
+          ${item.description ? `<div class="description">${escapeText(item.description)}</div>` : ""}
+          ${url ? `<a href="${escapeText(url)}" target="_blank" rel="noopener noreferrer">Ver producto ↗</a>` : ""}
+          <label class="status"><input type="checkbox" data-action="toggle" data-id="${escapeText(item.id)}" ${item.bought ? "checked" : ""}> ${item.bought ? "Ya lo compraron" : "Opcion de regalo"}</label>
+          <div class="card-actions"><button class="btn soft" data-action="edit" data-id="${escapeText(item.id)}">Editar</button><button class="btn danger" data-action="delete" data-id="${escapeText(item.id)}">Eliminar</button></div>
+        </div></article>`;
+    }).join("");
+  }
+  function resetForm() {
+    form.reset(); $("editId").value = ""; $("formTitle").textContent = "♡ Añadir una cosita";
+    $("saveBtn").textContent = "♡ Guardar cosita"; $("cancelEdit").hidden = true; $("removePhoto").checked = false;
+  }
+  function resizeImage(file) {
+    return new Promise((resolve, reject) => {
+      if (!file.type.startsWith("image/")) return reject(new Error("El archivo no es una imagen."));
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("No se pudo leer la foto."));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("No se pudo abrir la imagen."));
+        img.onload = () => {
+          const max = 1000, scale = Math.min(1, max / Math.max(img.width,img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+          canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", .78));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("name").value.trim();
+    if (!name) return;
+    const editId = $("editId").value, existing = items.find(x => x.id === editId);
+    const rawLink = $("link").value.trim(), link = safeUrl(rawLink);
+    if (rawLink && !link) { toast("Introduce un link que empiece por https:// o http://"); return; }
+    let photo = existing?.photo || "";
+    if ($("removePhoto").checked) photo = "";
+    if (photoInput.files[0]) {
+      try { photo = await resizeImage(photoInput.files[0]); }
+      catch (err) { toast(err.message || "No se pudo cargar la foto."); return; }
+    }
+    const item = {id:existing?.id || makeId(), name, category:$("category").value,
+      price:$("price").value.trim(), link, description:$("description").value.trim(),
+      photo, bought:existing?.bought || false, created:existing?.created || Date.now()};
+    if (existing) items = items.map(x => x.id === editId ? item : x);
+    else items.unshift(item);
+    persist(); render(); resetForm(); toast(existing ? "Cosita actualizada ♡" : "Cosita añadida ♡");
+  });
+  $("cancelEdit").addEventListener("click", resetForm);
+  $("items").addEventListener("change", e => {
+    const el = e.target;
+    if (el.dataset.action !== "toggle") return;
+    const item = items.find(x => x.id === el.dataset.id); if (!item) return;
+    item.bought = el.checked; persist(); render(); toast(item.bought ? "¡Una cosita conseguida! ♡" : "Devuelta a la wishlist");
+  });
+  $("items").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-action]"); if (!btn) return;
+    const item = items.find(x => x.id === btn.dataset.id); if (!item) return;
+    if (btn.dataset.action === "delete") {
+      if (!confirm(`¿Eliminar "${item.name}" de tu lista?`)) return;
+      items = items.filter(x => x.id !== item.id); persist(); render(); toast("Cosita eliminada");
+    }
+    if (btn.dataset.action === "edit") {
+      $("editId").value = item.id; $("name").value = item.name; $("category").value = item.category;
+      $("price").value = item.price; $("link").value = item.link; $("description").value = item.description;
+      $("removePhoto").checked = false; photoInput.value = "";
+      $("formTitle").textContent = "♡ Editar cosita"; $("saveBtn").textContent = "Guardar cambios"; $("cancelEdit").hidden = false;
+      $("formTitle").scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  });
+  ["search","filter","sort"].forEach(id => $(id).addEventListener(id === "search" ? "input" : "change", render));
+  $("exportBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({format:"mi-lista-princesa",version:1,items},null,2)],{type:"application/json"});
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = "mi-lista-princesa-respaldo.json"; a.click(); URL.revokeObjectURL(url);
+    toast("Respaldo preparado ♡");
+  });
+  $("importFile").addEventListener("change", async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text()), incoming = Array.isArray(parsed) ? parsed : parsed.items;
+      if (!Array.isArray(incoming) || !incoming.every(x => x && typeof x.name === "string")) throw new Error();
+      if (!confirm("La importación reemplazará la lista actual. ¿Continuar?")) { e.target.value=""; return; }
+      items = incoming.map(x => ({id:String(x.id || makeId()),name:x.name,category:String(x.category || "Otro caprichito"),
+        price:String(x.price || ""),link:safeUrl(x.link || ""),description:String(x.description || ""),
+        photo:typeof x.photo === "string" && x.photo.startsWith("data:image/") ? x.photo : "",
+        bought:!!x.bought,created:Number(x.created || Date.now())}));
+      persist(); render(); toast("Respaldo importado ♡");
+    } catch { toast("El archivo no parece ser un respaldo válido."); }
+    e.target.value = "";
+  });
+  $("clearBtn").addEventListener("click", () => {
+    if (!items.length) { toast("La lista ya está vacía"); return; }
+    if (!confirm("¿Seguro que quieres borrar TODA la lista? Esta acción no se puede deshacer. Exporta un respaldo antes si lo necesitas.")) return;
+    items = []; persist(); render(); resetForm(); toast("Lista borrada");
+  });
+  readStore();
+})();
+</script>
+</body>
+</html>
