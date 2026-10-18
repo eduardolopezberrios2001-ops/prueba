@@ -1,7 +1,7 @@
-name = "prueba"
-pages_build_output_dir = "."
+name = "mi-lista-princesa"
+compatibility_date = "2026-10-12"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "mi-lista-princesa-db"
-database_id = "bbdc7202-2da4-4183-af63-ba30f8623835"
+database_id = "TU_DATABASE_ID_AQUÍ"
