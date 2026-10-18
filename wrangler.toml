@@ -7,4 +7,4 @@ directory = "."
 [[d1_databases]]
 binding = "DB"
 database_name = "mi-lista-princesa-db"
-database_id = "TU_DATABASE_ID_AQUÍ"
+database_id = "bbdc7202-2da4-4183-af63-ba30f8623835"
