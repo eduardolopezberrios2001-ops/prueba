@@ -1,82 +1,67 @@
-export async function onRequest(context) {
-  const { request, env } = context;
-  const url = new URL(request.url);
-  const method = request.method;
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    // Vincula con la base de datos D1 nombrada en tus bindings de Cloudflare
+    const db = env.DB || env['mi-lista-princesa-db'];
 
-  const headers = {
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-
-  if (method === "OPTIONS") {
-    return new Response(null, { headers });
-  }
-
-  try {
-    // GET: Obtener todos los elementos de la tabla wishlist_items
-    if (method === "GET") {
-      const { results } = await env.DB.prepare("SELECT * FROM wishlist_items ORDER BY created DESC").all();
-      const items = (results || []).map(item => ({
-        ...item,
-        bought: Boolean(item.bought)
-      }));
-      return new Response(JSON.stringify(items), { headers });
-    }
-
-    // POST: Insertar un elemento nuevo
-    if (method === "POST") {
-      const body = await request.json();
-      await env.DB.prepare(
-        "INSERT INTO wishlist_items (id, name, category, price, link, description, photo, bought, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-      ).bind(
-        body.id,
-        body.name,
-        body.category || 'Otro caprichito',
-        body.price || '',
-        body.link || '',
-        body.description || '',
-        body.photo || '',
-        body.bought ? 1 : 0,
-        body.created || Date.now()
-      ).run();
-
-      return new Response(JSON.stringify({ success: true }), { headers });
-    }
-
-    // PUT: Actualizar un elemento existente
-    if (method === "PUT") {
-      const body = await request.json();
-      await env.DB.prepare(
-        "UPDATE wishlist_items SET name = ?, category = ?, price = ?, link = ?, description = ?, photo = ?, bought = ? WHERE id = ?"
-      ).bind(
-        body.name,
-        body.category || 'Otro caprichito',
-        body.price || '',
-        body.link || '',
-        body.description || '',
-        body.photo || '',
-        body.bought ? 1 : 0,
-        body.id
-      ).run();
-
-      return new Response(JSON.stringify({ success: true }), { headers });
-    }
-
-    // DELETE: Borrar uno o todos los elementos
-    if (method === "DELETE") {
-      const id = url.searchParams.get("id");
-      if (id) {
-        await env.DB.prepare("DELETE FROM wishlist_items WHERE id = ?").bind(id).run();
-      } else {
-        await env.DB.prepare("DELETE FROM wishlist_items").run();
+    try {
+      // 1. Obtener todos los elementos (GET /api/items)
+      if (url.pathname === '/api/items' && request.method === 'GET') {
+        const { results } = await db.prepare("SELECT * FROM items ORDER BY created DESC").all();
+        return Response.json(results.map(r => ({ ...r, bought: Boolean(r.bought) })));
       }
-      return new Response(JSON.stringify({ success: true }), { headers });
+
+      // 2. Crear un nuevo elemento (POST /api/items)
+      if (url.pathname === '/api/items' && request.method === 'POST') {
+        const item = await request.json();
+        await db.prepare(
+          `INSERT INTO items (id, name, category, price, link, description, photo, bought, created) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          item.id, item.name, item.category, item.price || "", 
+          item.link || "", item.description || "", item.photo || "", 
+          item.bought ? 1 : 0, item.created
+        ).run();
+        return Response.json({ success: true });
+      }
+
+      // 3. Actualizar elemento existente (PUT /api/items/:id)
+      if (url.pathname.startsWith('/api/items/') && request.method === 'PUT') {
+        const id = url.pathname.split('/').pop();
+        const item = await request.json();
+        await db.prepare(
+          `UPDATE items SET name = ?, category = ?, price = ?, link = ?, description = ?, photo = ?, bought = ? 
+           WHERE id = ?`
+        ).bind(
+          item.name, item.category, item.price || "", 
+          item.link || "", item.description || "", item.photo || "", 
+          item.bought ? 1 : 0, id
+        ).run();
+        return Response.json({ success: true });
+      }
+
+      // 4. Cambiar estado comprado (PATCH /api/items/:id)
+      if (url.pathname.startsWith('/api/items/') && request.method === 'PATCH') {
+        const id = url.pathname.split('/').pop();
+        const { bought } = await request.json();
+        await db.prepare("UPDATE items SET bought = ? WHERE id = ?").bind(bought ? 1 : 0, id).run();
+        return Response.json({ success: true });
+      }
+
+      // 5. Eliminar elemento (DELETE /api/items/:id)
+      if (url.pathname.startsWith('/api/items/') && request.method === 'DELETE') {
+        const id = url.pathname.split('/').pop();
+        await db.prepare("DELETE FROM items WHERE id = ?").bind(id).run();
+        return Response.json({ success: true });
+      }
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      });
     }
 
-    return new Response(JSON.stringify({ error: "Método no permitido" }), { status: 405, headers });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers });
+    // Servir archivos estáticos de la página si no es ruta de API
+    return env.ASSETS.fetch(request);
   }
-}
+};
