@@ -76,7 +76,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
 <header class="hero">
   <div class="crown">♕</div>
   <h1>Mi Lista de Deseos</h1>
-  <p class="subtitle">Pequeños caprichos, grandes sueños y cositas bonitas ♡</p>
+  <p class="subtitle">Base de datos D1: mi-lista-princesa-db (ID: bbdc7202-2da4-4183-af63-ba30f8623835) ♡</p>
 </header>
 <main class="wrap">
   <section class="stats" aria-label="Resumen de compras">
@@ -95,7 +95,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
         </div>
         <div class="field"><label for="price">Precio (opcional)</label><input id="price" placeholder="Ej. 12.990" inputmode="decimal"></div>
         <div class="field"><label for="link">Link de compra (opcional)</label><input id="link" type="url" placeholder="https://..."></div>
-        <div class="field full"><label for="photo">Foto (opcional)</label><input id="photo" type="file" accept="image/*"><small style="color:#a58a9a">La foto se guarda en la base de datos.</small><label style="display:flex;align-items:center;gap:8px;flex-direction:row"><input id="removePhoto" type="checkbox" style="width:auto"> Quitar foto actual al guardar</label></div>
+        <div class="field full"><label for="photo">Foto (opcional)</label><input id="photo" type="file" accept="image/*"><small style="color:#a58a9a">Las fotos se comprimen automáticamente para evitar errores en la base de datos D1.</small><label style="display:flex;align-items:center;gap:8px;flex-direction:row"><input id="removePhoto" type="checkbox" style="width:auto"> Quitar foto actual al guardar</label></div>
         <div class="field full"><label for="description">Notas (opcional)</label><textarea id="description" maxlength="600" placeholder="Color, talla, tienda, por qué lo quiero..."></textarea></div>
       </div>
       <div class="actions"><button class="btn primary" type="submit" id="saveBtn">♡ Guardar cosita</button><button class="btn soft" type="button" id="cancelEdit" hidden>Cancelar edición</button></div>
@@ -110,17 +110,9 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     </div>
     <div class="items" id="items"></div>
   </section>
-  <section class="panel">
-    <h2 class="section-title">♡ Tu lista sincronizada</h2>
-    <p class="description">Esta lista está conectada a tu base de datos en la nube. Cualquier cambio que hagas aquí se reflejará en todos tus dispositivos.</p>
-    <div class="actions">
-      <button class="btn danger" id="clearBtn" type="button">Borrar toda la lista</button>
-    </div>
-  </section>
 </main>
-<footer>Hecho con amor, brillo y un poquito de magia ♡</footer>
+<footer>Hecho con amor, brillo y Cloudflare D1 (ID: bbdc7202) ♡</footer>
 <div class="toast" id="toast" role="status"></div>
-
 <script>
 (() => {
   let items = [];
@@ -132,7 +124,6 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     const el = $("toast"); el.textContent = message; el.classList.add("show");
     clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove("show"), 2400);
   }
-  function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function safeUrl(value) {
     if (!value) return "";
     try { const u = new URL(value); return ["http:", "https:"].includes(u.protocol) ? u.href : ""; }
@@ -146,17 +137,59 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   }
 
-  async function readStore() {
+  // Comunicación con el backend de Cloudflare Workers / D1
+  async function cargarItems() {
     try {
-      const res = await fetch("/api");
-      if (!res.ok) throw new Error("Error del servidor");
-      items = await res.json();
+      const res = await fetch('/api/items');
+      if (!res.ok) throw new Error("Error al cargar de la base de datos");
+      const data = await res.json();
+      items = Array.isArray(data) ? data : [];
+      render();
     } catch (err) {
-      console.error(err);
-      toast("Error al conectar con la base de datos");
-      items = [];
+      toast("No se pudo conectar con la base de datos D1");
     }
-    render();
+  }
+
+  async function guardarItemEnDB(item, isEdit) {
+    try {
+      const endpoint = isEdit ? `/api/items/${item.id}` : '/api/items';
+      const method = isEdit ? 'PUT' : 'POST';
+      const res = await fetch(endpoint, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
+      });
+      if (!res.ok) throw new Error("Error en DB al guardar");
+      await cargarItems();
+      resetForm();
+      toast(isEdit ? "Cosita actualizada en D1 ♡" : "Cosita guardada en D1 ♡");
+    } catch (err) {
+      toast("Error en db: No se pudo guardar el registro.");
+    }
+  }
+
+  async function cambiarEstadoDB(id, bought) {
+    try {
+      await fetch(`/api/items/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bought })
+      });
+      await cargarItems();
+      toast(bought ? "¡Una cosita conseguida! ♡" : "Devuelta a la wishlist");
+    } catch {
+      toast("Error al actualizar estado en DB");
+    }
+  }
+
+  async function eliminarItemDB(id) {
+    try {
+      await fetch(`/api/items/${id}`, { method: 'DELETE' });
+      await cargarItems();
+      toast("Cosita eliminada de la base de datos");
+    } catch {
+      toast("Error al eliminar de la DB");
+    }
   }
 
   function render() {
@@ -170,11 +203,10 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     if (q) filtered = filtered.filter(x => [x.name,x.category,x.description,x.price].join(" ").toLowerCase().includes(q));
     if (filter === "pending") filtered = filtered.filter(x => !x.bought);
     if (filter === "bought") filtered = filtered.filter(x => x.bought);
-    
     if (sort === "name") filtered.sort((a,b) => a.name.localeCompare(b.name,"es"));
-    else if (sort === "price") filtered.sort((a,b) => (parseFloat(a.price.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity) - (parseFloat(b.price.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity));
+    else if (sort === "price") filtered.sort((a,b) => (parseFloat(a.price?.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity) - (parseFloat(b.price?.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity));
     else filtered.sort((a,b) => b.created - a.created);
-
+    
     const container = $("items");
     if (!filtered.length) {
       container.innerHTML = `<div class="empty"><div class="big">♡</div><strong>${items.length ? "No encuentro cositas con ese filtro" : "Tu wishlist está esperando magia"}</strong><p>${items.length ? "Prueba con otra búsqueda o filtro." : "Añade tu primer caprichito en el formulario de arriba."}</p></div>`;
@@ -210,11 +242,11 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
         const img = new Image();
         img.onerror = () => reject(new Error("No se pudo abrir la imagen."));
         img.onload = () => {
-          const max = 600, scale = Math.min(1, max / Math.max(img.width,img.height));
+          const max = 800, scale = Math.min(1, max / Math.max(img.width,img.height));
           const canvas = document.createElement("canvas");
           canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
           canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", .65));
+          resolve(canvas.toDataURL("image/jpeg", .75));
         };
         img.src = reader.result;
       };
@@ -228,7 +260,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     if (!name) return;
     const editId = $("editId").value, existing = items.find(x => x.id === editId);
     const rawLink = $("link").value.trim(), link = safeUrl(rawLink);
-    if (rawLink && !link) { toast("Introduce un link que empiece por https:// o http://"); return; }
+    if (rawLink && !link) { toast("Introduce un link válido que empiece por https://"); return; }
     
     let photo = existing?.photo || "";
     if ($("removePhoto").checked) photo = "";
@@ -238,7 +270,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     }
 
     const item = {
-      id: existing?.id || makeId(),
+      id: existing?.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
       name,
       category: $("category").value,
       price: $("price").value.trim(),
@@ -249,50 +281,23 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
       created: existing?.created || Date.now()
     };
 
-    const method = existing ? "PUT" : "POST";
-    const res = await fetch("/api", {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(item)
-    });
-
-    if (!res.ok) { toast("Error al guardar en la BD"); return; }
-
-    await readStore();
-    resetForm();
-    toast(existing ? "Cosita actualizada ♡" : "Cosita añadida ♡");
+    await guardarItemEnDB(item, !!existing);
   });
 
   $("cancelEdit").addEventListener("click", resetForm);
 
-  $("items").addEventListener("change", async e => {
+  $("items").addEventListener("change", e => {
     const el = e.target;
     if (el.dataset.action !== "toggle") return;
-    const item = items.find(x => x.id === el.dataset.id); if (!item) return;
-    
-    item.bought = el.checked;
-    const res = await fetch("/api", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(item)
-    });
-
-    if (!res.ok) { toast("Error al actualizar"); return; }
-
-    render();
-    toast(item.bought ? "¡Una cosita conseguida! ♡" : "Devuelta a la wishlist");
+    cambiarEstadoDB(el.dataset.id, el.checked);
   });
 
-  $("items").addEventListener("click", async e => {
+  $("items").addEventListener("click", e => {
     const btn = e.target.closest("button[data-action]"); if (!btn) return;
     const item = items.find(x => x.id === btn.dataset.id); if (!item) return;
-    
     if (btn.dataset.action === "delete") {
-      if (!confirm(`¿Eliminar "${item.name}" de tu lista?`)) return;
-      const res = await fetch(`/api?id=${item.id}`, { method: "DELETE" });
-      if (!res.ok) { toast("Error al eliminar"); return; }
-      await readStore();
-      toast("Cosita eliminada");
+      if (!confirm(`¿Eliminar "${item.name}" de tu base de datos?`)) return;
+      eliminarItemDB(item.id);
     }
     if (btn.dataset.action === "edit") {
       $("editId").value = item.id; $("name").value = item.name; $("category").value = item.category;
@@ -305,18 +310,8 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
 
   ["search","filter","sort"].forEach(id => $(id).addEventListener(id === "search" ? "input" : "change", render));
 
-  $("clearBtn").addEventListener("click", async () => {
-    if (!items.length) { toast("La lista ya está vacía"); return; }
-    if (!confirm("¿Seguro que quieres borrar TODA la lista? Esta acción no se puede deshacer.")) return;
-    
-    const res = await fetch("/api", { method: "DELETE" });
-    if (!res.ok) { toast("Error al borrar lista"); return; }
-    await readStore();
-    resetForm();
-    toast("Lista borrada");
-  });
-
-  readStore();
+  // Inicializar cargando los datos desde Cloudflare D1
+  cargarItems();
 })();
 </script>
 </body>
