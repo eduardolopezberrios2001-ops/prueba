@@ -1,5 +1,4 @@
 name = "prueba"
-main = "api.js"
 compatibility_date = "2026-01-01"
 
 [[d1_databases]]
