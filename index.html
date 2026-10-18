@@ -28,6 +28,8 @@ h1{font-family:Georgia,serif;font-weight:normal;font-size:clamp(2rem,5vw,3.3rem)
 .stat{border:1px solid var(--line);background:#fff8fb;border-radius:18px;padding:14px;text-align:center}
 .stat strong{display:block;font-family:Georgia,serif;font-size:1.65rem;color:#c85e91}
 .stat span{font-size:.83rem;color:var(--muted)}
+.progress{height:10px;border-radius:99px;background:#f9e3ed;overflow:hidden;margin-top:12px}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#f3a7c7,#cba8f4);border-radius:99px;transition:width .25s}
 .section-title{font-family:Georgia,serif;font-size:1.35rem;margin:0 0 15px;color:#b95886}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .field{display:flex;flex-direction:column;gap:6px}
@@ -76,7 +78,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
 <header class="hero">
   <div class="crown">♕</div>
   <h1>Mi Lista de Deseos</h1>
-  <p class="subtitle">Base de datos D1: mi-lista-princesa-db (ID: bbdc7202-2da4-4183-af63-ba30f8623835) ♡</p>
+  <p class="subtitle">Pequeños caprichos, grandes sueños y cositas bonitas ♡</p>
 </header>
 <main class="wrap">
   <section class="stats" aria-label="Resumen de compras">
@@ -95,7 +97,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
         </div>
         <div class="field"><label for="price">Precio (opcional)</label><input id="price" placeholder="Ej. 12.990" inputmode="decimal"></div>
         <div class="field"><label for="link">Link de compra (opcional)</label><input id="link" type="url" placeholder="https://..."></div>
-        <div class="field full"><label for="photo">Foto (opcional)</label><input id="photo" type="file" accept="image/*"><small style="color:#a58a9a">Las fotos se comprimen automáticamente para evitar errores en la base de datos D1.</small><label style="display:flex;align-items:center;gap:8px;flex-direction:row"><input id="removePhoto" type="checkbox" style="width:auto"> Quitar foto actual al guardar</label></div>
+        <div class="field full"><label for="photo">Foto (opcional)</label><input id="photo" type="file" accept="image/*"><small style="color:#a58a9a">La foto se guarda optimizada en este navegador.</small><label style="display:flex;align-items:center;gap:8px;flex-direction:row"><input id="removePhoto" type="checkbox" style="width:auto"> Quitar foto actual al guardar</label></div>
         <div class="field full"><label for="description">Notas (opcional)</label><textarea id="description" maxlength="600" placeholder="Color, talla, tienda, por qué lo quiero..."></textarea></div>
       </div>
       <div class="actions"><button class="btn primary" type="submit" id="saveBtn">♡ Guardar cosita</button><button class="btn soft" type="button" id="cancelEdit" hidden>Cancelar edición</button></div>
@@ -110,11 +112,21 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     </div>
     <div class="items" id="items"></div>
   </section>
+  <section class="panel">
+    <h2 class="section-title">♡ Tu lista, a salvo</h2>
+    <p class="description">Tus datos se guardan en este navegador y en este dispositivo. Para tener una copia o pasar la lista a otro equipo, exporta un respaldo. Las fotos se incluyen en el archivo JSON.</p>
+    <div class="actions">
+      <button class="btn soft" id="exportBtn" type="button">♡ Exportar respaldo</button>
+      <label class="btn soft" for="importFile" style="cursor:pointer">Importar respaldo</label><input id="importFile" type="file" accept=".json,application/json" hidden>
+      <button class="btn danger" id="clearBtn" type="button">Borrar toda la lista</button>
+    </div>
+  </section>
 </main>
-<footer>Hecho con amor, brillo y Cloudflare D1 (ID: bbdc7202) ♡</footer>
+<footer>Hecho con amor, brillo y un poquito de magia ♡</footer>
 <div class="toast" id="toast" role="status"></div>
 <script>
 (() => {
+  const STORAGE_KEY = "mi-lista-princesa-v1";
   let items = [];
   const $ = id => document.getElementById(id);
   const form = $("itemForm");
@@ -124,6 +136,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     const el = $("toast"); el.textContent = message; el.classList.add("show");
     clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove("show"), 2400);
   }
+  function makeId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
   function safeUrl(value) {
     if (!value) return "";
     try { const u = new URL(value); return ["http:", "https:"].includes(u.protocol) ? u.href : ""; }
@@ -136,77 +149,35 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
   function escapeText(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   }
-
-  // Comunicación con el backend de Cloudflare Workers / D1
-  async function cargarItems() {
-    try {
-      const res = await fetch('/api/items');
-      if (!res.ok) throw new Error("Error al cargar de la base de datos");
-      const data = await res.json();
-      items = Array.isArray(data) ? data : [];
-      render();
-    } catch (err) {
-      toast("No se pudo conectar con la base de datos D1");
-    }
+  function persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+    catch { toast("No se pudo guardar. Prueba con una foto más pequeña."); }
   }
-
-  async function guardarItemEnDB(item, isEdit) {
+  function readStore() {
     try {
-      const endpoint = isEdit ? `/api/items/${item.id}` : '/api/items';
-      const method = isEdit ? 'PUT' : 'POST';
-      const res = await fetch(endpoint, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item)
-      });
-      if (!res.ok) throw new Error("Error en DB al guardar");
-      await cargarItems();
-      resetForm();
-      toast(isEdit ? "Cosita actualizada en D1 ♡" : "Cosita guardada en D1 ♡");
-    } catch (err) {
-      toast("Error en db: No se pudo guardar el registro.");
-    }
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      items = Array.isArray(data) ? data.filter(x => x && x.id && x.name).map(x => ({
+        id:String(x.id), name:String(x.name), category:String(x.category || "Otro caprichito"),
+        price:String(x.price || ""), link:safeUrl(x.link || ""), description:String(x.description || ""),
+        photo:typeof x.photo === "string" && x.photo.startsWith("data:image/") ? x.photo : "",
+        bought:!!x.bought, created:Number(x.created || Date.now())
+      })) : [];
+    } catch { items = []; }
+    render();
   }
-
-  async function cambiarEstadoDB(id, bought) {
-    try {
-      await fetch(`/api/items/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bought })
-      });
-      await cargarItems();
-      toast(bought ? "¡Una cosita conseguida! ♡" : "Devuelta a la wishlist");
-    } catch {
-      toast("Error al actualizar estado en DB");
-    }
-  }
-
-  async function eliminarItemDB(id) {
-    try {
-      await fetch(`/api/items/${id}`, { method: 'DELETE' });
-      await cargarItems();
-      toast("Cosita eliminada de la base de datos");
-    } catch {
-      toast("Error al eliminar de la DB");
-    }
-  }
-
   function render() {
     const boughtCount = items.filter(x => x.bought).length;
     $("total").textContent = items.length;
     $("bought").textContent = boughtCount;
     $("remaining").textContent = items.length - boughtCount;
-    
     let filtered = [...items];
     const q = $("search").value.trim().toLowerCase(), filter = $("filter").value, sort = $("sort").value;
     if (q) filtered = filtered.filter(x => [x.name,x.category,x.description,x.price].join(" ").toLowerCase().includes(q));
     if (filter === "pending") filtered = filtered.filter(x => !x.bought);
     if (filter === "bought") filtered = filtered.filter(x => x.bought);
     if (sort === "name") filtered.sort((a,b) => a.name.localeCompare(b.name,"es"));
-    else if (sort === "price") filtered.sort((a,b) => (parseFloat(a.price?.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity) - (parseFloat(b.price?.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity));
-    else filtered.sort((a,b) => b.created - a.created);
-    
+    else if (sort === "price") filtered.sort((a,b) => (parseFloat(a.price.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity) - (parseFloat(b.price.replace(/[^\d,.-]/g,"").replace(/\./g,"").replace(",",".")) || Infinity));
+    else filtered.sort((a,b) => b.created-a.created);
     const container = $("items");
     if (!filtered.length) {
       container.innerHTML = `<div class="empty"><div class="big">♡</div><strong>${items.length ? "No encuentro cositas con ese filtro" : "Tu wishlist está esperando magia"}</strong><p>${items.length ? "Prueba con otra búsqueda o filtro." : "Añade tu primer caprichito en el formulario de arriba."}</p></div>`;
@@ -227,12 +198,10 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
         </div></article>`;
     }).join("");
   }
-
   function resetForm() {
     form.reset(); $("editId").value = ""; $("formTitle").textContent = "♡ Añadir una cosita";
     $("saveBtn").textContent = "♡ Guardar cosita"; $("cancelEdit").hidden = true; $("removePhoto").checked = false;
   }
-
   function resizeImage(file) {
     return new Promise((resolve, reject) => {
       if (!file.type.startsWith("image/")) return reject(new Error("El archivo no es una imagen."));
@@ -242,62 +211,50 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
         const img = new Image();
         img.onerror = () => reject(new Error("No se pudo abrir la imagen."));
         img.onload = () => {
-          const max = 800, scale = Math.min(1, max / Math.max(img.width,img.height));
+          const max = 500, scale = Math.min(1, max / Math.max(img.width,img.height));
           const canvas = document.createElement("canvas");
           canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
           canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
-          resolve(canvas.toDataURL("image/jpeg", .75));
+          resolve(canvas.toDataURL("image/jpeg", .6));
         };
         img.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
   }
-
   form.addEventListener("submit", async e => {
     e.preventDefault();
     const name = $("name").value.trim();
     if (!name) return;
     const editId = $("editId").value, existing = items.find(x => x.id === editId);
     const rawLink = $("link").value.trim(), link = safeUrl(rawLink);
-    if (rawLink && !link) { toast("Introduce un link válido que empiece por https://"); return; }
-    
+    if (rawLink && !link) { toast("Introduce un link que empiece por https:// o http://"); return; }
     let photo = existing?.photo || "";
     if ($("removePhoto").checked) photo = "";
     if (photoInput.files[0]) {
       try { photo = await resizeImage(photoInput.files[0]); }
       catch (err) { toast(err.message || "No se pudo cargar la foto."); return; }
     }
-
-    const item = {
-      id: existing?.id || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
-      name,
-      category: $("category").value,
-      price: $("price").value.trim(),
-      link,
-      description: $("description").value.trim(),
-      photo,
-      bought: existing?.bought || false,
-      created: existing?.created || Date.now()
-    };
-
-    await guardarItemEnDB(item, !!existing);
+    const item = {id:existing?.id || makeId(), name, category:$("category").value,
+      price:$("price").value.trim(), link, description:$("description").value.trim(),
+      photo, bought:existing?.bought || false, created:existing?.created || Date.now()};
+    if (existing) items = items.map(x => x.id === editId ? item : x);
+    else items.unshift(item);
+    persist(); render(); resetForm(); toast(existing ? "Cosita actualizada ♡" : "Cosita añadida ♡");
   });
-
   $("cancelEdit").addEventListener("click", resetForm);
-
   $("items").addEventListener("change", e => {
     const el = e.target;
     if (el.dataset.action !== "toggle") return;
-    cambiarEstadoDB(el.dataset.id, el.checked);
+    const item = items.find(x => x.id === el.dataset.id); if (!item) return;
+    item.bought = el.checked; persist(); render(); toast(item.bought ? "¡Una cosita conseguida! ♡" : "Devuelta a la wishlist");
   });
-
   $("items").addEventListener("click", e => {
     const btn = e.target.closest("button[data-action]"); if (!btn) return;
     const item = items.find(x => x.id === btn.dataset.id); if (!item) return;
     if (btn.dataset.action === "delete") {
-      if (!confirm(`¿Eliminar "${item.name}" de tu base de datos?`)) return;
-      eliminarItemDB(item.id);
+      if (!confirm(`¿Eliminar "${item.name}" de tu lista?`)) return;
+      items = items.filter(x => x.id !== item.id); persist(); render(); toast("Cosita eliminada");
     }
     if (btn.dataset.action === "edit") {
       $("editId").value = item.id; $("name").value = item.name; $("category").value = item.category;
@@ -307,11 +264,33 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
       $("formTitle").scrollIntoView({behavior:"smooth",block:"center"});
     }
   });
-
   ["search","filter","sort"].forEach(id => $(id).addEventListener(id === "search" ? "input" : "change", render));
-
-  // Inicializar cargando los datos desde Cloudflare D1
-  cargarItems();
+  $("exportBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({format:"mi-lista-princesa",version:1,items},null,2)],{type:"application/json"});
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = "mi-lista-princesa-respaldo.json"; a.click(); URL.revokeObjectURL(url);
+    toast("Respaldo preparado ♡");
+  });
+  $("importFile").addEventListener("change", async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text()), incoming = Array.isArray(parsed) ? parsed : parsed.items;
+      if (!Array.isArray(incoming) || !incoming.every(x => x && typeof x.name === "string")) throw new Error();
+      if (!confirm("La importación reemplazará la lista actual. ¿Continuar?")) { e.target.value=""; return; }
+      items = incoming.map(x => ({id:String(x.id || makeId()),name:x.name,category:String(x.category || "Otro caprichito"),
+        price:String(x.price || ""),link:safeUrl(x.link || ""),description:String(x.description || ""),
+        photo:typeof x.photo === "string" && x.photo.startsWith("data:image/") ? x.photo : "",
+        bought:!!x.bought,created:Number(x.created || Date.now())}));
+      persist(); render(); toast("Respaldo importado ♡");
+    } catch { toast("El archivo no parece ser un respaldo válido."); }
+    e.target.value = "";
+  });
+  $("clearBtn").addEventListener("click", () => {
+    if (!items.length) { toast("La lista ya está vacía"); return; }
+    if (!confirm("¿Seguro que quieres borrar TODA la lista? Esta acción no se puede deshacer. Exporta un respaldo antes si lo necesitas.")) return;
+    items = []; persist(); render(); resetForm(); toast("Lista borrada");
+  });
+  readStore();
 })();
 </script>
 </body>
