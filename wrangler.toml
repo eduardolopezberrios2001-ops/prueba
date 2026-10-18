@@ -1,8 +1,6 @@
-name = "prueba"
-compatibility_date = "2026-10-12"
-
-[assets]
-directory = "."
+name = "mi-lista-princesa"
+main = "api.js"
+compatibility_date = "2026-01-01"
 
 [[d1_databases]]
 binding = "DB"
