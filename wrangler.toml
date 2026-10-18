@@ -1,0 +1,7 @@
+name = "mi-lista-princesa"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mi-lista-princesa-db"
+database_id = "bbdc7202-2da4-4183-af63-ba30f8623835"
