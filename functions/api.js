@@ -15,6 +15,7 @@ export async function onRequest(context) {
   }
 
   try {
+    // GET: Obtener todos los elementos de la tabla wishlist_items
     if (method === "GET") {
       const { results } = await env.DB.prepare("SELECT * FROM wishlist_items ORDER BY created DESC").all();
       const items = (results || []).map(item => ({
@@ -24,6 +25,7 @@ export async function onRequest(context) {
       return new Response(JSON.stringify(items), { headers });
     }
 
+    // POST: Insertar un elemento nuevo
     if (method === "POST") {
       const body = await request.json();
       await env.DB.prepare(
@@ -43,6 +45,7 @@ export async function onRequest(context) {
       return new Response(JSON.stringify({ success: true }), { headers });
     }
 
+    // PUT: Actualizar un elemento existente
     if (method === "PUT") {
       const body = await request.json();
       await env.DB.prepare(
@@ -61,6 +64,7 @@ export async function onRequest(context) {
       return new Response(JSON.stringify({ success: true }), { headers });
     }
 
+    // DELETE: Borrar uno o todos los elementos
     if (method === "DELETE") {
       const id = url.searchParams.get("id");
       if (id) {
