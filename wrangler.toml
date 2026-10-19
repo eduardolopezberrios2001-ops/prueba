@@ -1,6 +1,9 @@
 name = "prueba1"
 compatibility_date = "2026-01-01"
 
+[assets]
+directory = "."
+
 [[d1_databases]]
 binding = "DB"
 database_name = "mi-lista-princesa-db"
