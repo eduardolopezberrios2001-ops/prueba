@@ -1,4 +1,5 @@
 name = "prueba1"
+main = "functions/api.js"
 compatibility_date = "2026-01-01"
 
 [assets]
