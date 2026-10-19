@@ -80,7 +80,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
 </header>
 <main class="wrap">
   <section class="stats" aria-label="Resumen de compras">
-    <div class="stat"><strong id="total">0</strong><span>Mis cositas</span></div>
+    <div class="stat"><strong id="total">0</strong><span>Mis Regalos</span></div>
     <div class="stat"><strong id="bought">0</strong><span>Ya compradas</span></div>
     <div class="stat"><strong id="remaining">0</strong><span>Por conseguir</span></div>
   </section>
@@ -212,7 +212,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     
     const container = $("items");
     if (!filtered.length) {
-      container.innerHTML = `<div class="empty"><div class="big">♡</div><strong>${items.length ? "No encuentro cositas con ese filtro" : "Tu wishlist está esperando magia"}</strong><p>${items.length ? "Prueba con otra búsqueda o filtro." : "Añade tu primer caprichito arriba para guardarlo en la base de datos."}</p></div>`;
+      container.innerHTML = `<div class="empty"><div class="big">♡</div><strong>${items.length ? "No encuentro nada con ese filtro" : "Tu wishlist está esperando magia"}</strong><p>${items.length ? "Prueba con otra búsqueda o filtro." : "Añade tu primer caprichito arriba para guardarlo en la base de datos."}</p></div>`;
       return;
     }
     container.innerHTML = filtered.map(item => {
@@ -232,8 +232,8 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
   }
 
   function resetForm() {
-    form.reset(); $("editId").value = ""; $("formTitle").textContent = "♡ Añadir una cosita";
-    $("saveBtn").textContent = "♡ Guardar cosita"; $("cancelEdit").hidden = true; $("removePhoto").checked = false;
+    form.reset(); $("editId").value = ""; $("formTitle").textContent = "♡ Añadir un Regalo";
+    $("saveBtn").textContent = "♡ Guardar Regalo"; $("cancelEdit").hidden = true; $("removePhoto").checked = false;
   }
 
   function resizeImage(file) {
