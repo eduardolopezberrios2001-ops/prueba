@@ -76,7 +76,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
 <header class="hero">
   <div class="crown">♕</div>
   <h1>Mi Lista de Deseos</h1>
-  <p class="subtitle">Conectado a D1 (mi-lista-princesa-db) ♡</p>
+  <p class="subtitle"></p>
 </header>
 <main class="wrap">
   <section class="stats" aria-label="Resumen de compras">
@@ -85,13 +85,13 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     <div class="stat"><strong id="remaining">0</strong><span>Por conseguir</span></div>
   </section>
   <section class="panel">
-    <h2 class="section-title" id="formTitle">♡ Añadir una cosita</h2>
+    <h2 class="section-title" id="formTitle">♡ Añadir un Regalo</h2>
     <form id="itemForm">
       <input type="hidden" id="editId">
       <div class="form-grid">
         <div class="field"><label for="name">Nombre *</label><input id="name" required maxlength="100" placeholder="Ej. Labial rosita"></div>
         <div class="field"><label for="category">Categoría</label>
-          <select id="category"><option>Maquillaje</option><option>Ropa y accesorios</option><option>Skincare</option><option>Tecnología</option><option>Decoración</option><option>Libros</option><option>Otro caprichito</option></select>
+          <select id="category"><option>Maquillaje</option><option>Ropa y accesorios</option><option>Skincare</option><option>Tecnología</option><option>Decoración</option><option>Libros</option><option>Otros Regalos</option></select>
         </div>
         <div class="field"><label for="price">Precio (opcional)</label><input id="price" placeholder="Ej. 12.990" inputmode="decimal"></div>
         <div class="field"><label for="link">Link de compra (opcional)</label><input id="link" type="url" placeholder="https://..."></div>
@@ -104,7 +104,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
   <section class="panel">
     <h2 class="section-title">✧ Mi wishlist ✧</h2>
     <div class="toolbar">
-      <input id="search" type="search" placeholder="Buscar una cosita...">
+      <input id="search" type="search" placeholder="Buscar un Regalo">
       <select id="filter" aria-label="Filtrar por estado"><option value="all">Todas</option><option value="pending">Por comprar</option><option value="bought">Compradas</option></select>
       <select id="sort" aria-label="Ordenar"><option value="new">Más recientes</option><option value="name">Nombre A–Z</option><option value="price">Precio: menor a mayor</option></select>
     </div>
@@ -112,7 +112,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
     <div class="items" id="items"></div>
   </section>
 </main>
-<footer>Hecho con amor y tu Base de Datos D1 ♡</footer>
+<footer>Hecho con amor♡</footer>
 <div class="toast" id="toast" role="status"></div>
 <script>
 (() => {
@@ -225,7 +225,7 @@ footer{text-align:center;padding:0 15px 30px;color:#b18da2;font-size:.82rem}
           ${item.price ? `<div class="price">${escapeText(money(item.price))}</div>` : ""}
           ${item.description ? `<div class="description">${escapeText(item.description)}</div>` : ""}
           ${url ? `<a href="${escapeText(url)}" target="_blank" rel="noopener noreferrer">Ver producto ↗</a>` : ""}
-          <label class="status"><input type="checkbox" data-action="toggle" data-id="${escapeText(item.id)}" ${item.bought ? "checked" : ""}> ${item.bought ? "Ya lo compraron" : "Opcion de regalo"}</label>
+          <label class="status"><input type="checkbox" data-action="toggle" data-id="${escapeText(item.id)}" ${item.bought ? "checked" : ""}> ${item.bought ? "Ya lo compraron" : "Regalo Disponible"}</label>
           <div class="card-actions"><button class="btn soft" data-action="edit" data-id="${escapeText(item.id)}">Editar</button><button class="btn danger" data-action="delete" data-id="${escapeText(item.id)}">Eliminar</button></div>
         </div></article>`;
     }).join("");
